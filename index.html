@@ -1,0 +1,247 @@
+<!doctype html>
+<html>
+	<head>
+		<meta charset="utf-8" />
+		<title>
+			Brainfjsk
+		</title>
+		<style>
+			body{
+				background-color: #555555;
+			}
+			
+			#controls{
+				position: absolute;
+				top: 20px;
+				left: 20px;
+				right: 20px;
+				height: 240px;
+				padding: 10px;
+				background-color: #666666;
+				color: #00FF00;
+				font-family: monospace;
+			}
+			
+			#codeInput{
+				width: 100%;
+				color: #FFFFFF;
+				box-sizing: border-box;
+				background-color: #888888;
+				border: 1px #555555 solid;
+				height: 200px;
+				margin-bottom: 7px;
+				outline: none;
+			}
+
+			#programInput{
+				color: #FFFFFF;
+				background-color: #888888;
+				border: 1px #555555 solid;
+				box-sizing: border-box;
+				height: 25px;
+				width: 200px;
+				padding: 5px;
+				outline: none;
+			}
+			
+			#console{
+				position: absolute;
+				top: 300px;
+				left: 20px;
+				right: 20px;
+				bottom: 20px;
+				padding: 10px;
+				background-color: #000000;
+				color: #00FF00;
+				font-family: monospace;
+			}
+			
+			#output{
+				white-space: pre;
+			}
+		</style>
+	</head>
+	<body>
+		<div id="controls">
+			<textarea autofocus id="codeInput">
+&gt;++++++++[-&lt;+++++++++&gt;]&lt;.&gt;&gt;+&gt;-[+]++&gt;++&gt;+++[&gt;[-&gt;+++&lt;&lt;+++&gt;]&lt;&lt;]&gt;-----.&gt;-&gt;
++++..+++.&gt;-.&lt;&lt;+[&gt;[+&gt;+]&gt;&gt;]&lt;--------------.&gt;&gt;.+++.------.--------.&gt;+.&gt;+.
+			</textarea><br />
+			<!--input type="text" id="programInput" placeholder="Input for program" /-->
+			<button id="runButton" onclick="run()">Compile</button>
+			<button id="resetButton">Reset</button>
+			<label for="boundaryChecks">Perform boundary checks: </label>
+			<input id="boundaryChecks" type="checkbox" />
+		</div>
+		<div id="console">
+			<span id="output"></span>
+		</div>
+	</body>
+</html>
+
+<script type="text/javascript">
+	function run(){
+		document.getElementById("output").innerHTML = "";
+		var code = document.getElementById("codeInput").value;
+		var boundaryChecks = document.getElementById("boundaryChecks").checked;
+		//var input = document.getElementById("programInput").value;
+		compile(code, boundaryChecks);
+	}
+	
+	function compile(code, boundaryChecks){
+		var tape = {0: 0};
+		var pointer = 0;
+		var insPointer = 0;
+
+		var loopId = 0;
+		var loops = [];
+
+		var midas = "";
+
+		function m(line){
+			midas += line + "\n";
+		}
+
+		function b(line){
+			if(boundaryChecks){
+				midas += line + "\n";
+			}
+		}
+
+		m("LDAI $tapeStart");
+		m("PDAI 040");
+		m("JMPI $insStart");
+		m("");
+		
+		m("$address: 000");
+		m("");
+		
+		b("$wrapToStart:");
+		b("LDAI $tapeStart");
+		b("RSRT");
+		b("");
+
+		b("$wrapToEnd:");
+		b("LDAI 255.");
+		b("RSRT");
+		b("");
+		
+		m("$insStart:");
+		m("");
+		
+		code = code.split("");
+		
+		do{
+			switch(code[insPointer]){
+				case ">":
+					m("// >");
+					m("INCA");
+					b("SRCS $wrapToStart");
+					m("");
+				break;
+				case "<":
+					m("// <");
+					m("DECA");
+					b("COMP $insStart");
+					b("SRNS $wrapToEnd");
+					m("");
+				break;
+				case "+":
+					m("// +");
+					m("WRAI $address");
+					m("LDAA");
+					m("INCA");
+					m("WRAM $address");
+					m("LDAM $address");
+					m("");
+				break;
+				case "-":
+					m("// -");
+					m("WRAI $address");
+					m("LDAA");
+					m("DECA");
+					m("WRAM $address");
+					m("LDAM $address");
+					m("");
+				break;
+				case ".":
+					m("// .");
+					m("PSHA");
+					m("LDAA");
+					m("PDWA");
+					m("PULA");
+					m("");
+				break;
+				case ",":
+					/*var character = input.charCodeAt(inputPointer);
+					if(!character){
+						character = 0;
+					}
+					tape[pointer] = character;
+					inputPointer++;*/			
+				break;
+				case "[":
+					loopId++;
+					loops.push(loopId);
+
+					m("// [");
+					m("PSHA");
+					m("LDAA");
+					m("COMP 000");
+					m("PULA");
+					m("BRZS $closing_"+loopId);
+					m("$opening_"+loopId+":");
+					m("");
+					/*
+					if(tape[pointer] == 0){
+						var bracketLevel = 0;
+						do{
+							insPointer++;
+							if(code[insPointer] == "["){
+								bracketLevel++;
+							} else if(code[insPointer] == "]"){
+								bracketLevel--;
+							}
+						}while(bracketLevel >= 0);
+					}
+					*/
+				break;
+				case "]":
+
+					var closing = loops.pop();
+					
+					m("// ]");
+					m("PSHA");
+					m("LDAA");
+					m("COMP 000");
+					m("PULA");
+					m("BRZZ $opening_"+closing);
+					m("$closing_"+closing+":");
+					m("");
+					/*
+					if(tape[pointer] != 0){
+						var bracketLevel = 0;
+						do{
+							insPointer--;
+							if(code[insPointer] == "]"){
+								bracketLevel++;
+							} else if(code[insPointer] == "["){
+								bracketLevel--;
+							}
+						}while(bracketLevel >= 0);
+					}
+					*/
+				break;
+			}
+			insPointer++;
+		}while(insPointer < code.length);
+
+		m("$end: JMPI $end");
+		m("");
+		
+		m("$tapeStart:");
+		
+		document.getElementById("output").innerHTML = midas;
+		
+	}
+</script>
