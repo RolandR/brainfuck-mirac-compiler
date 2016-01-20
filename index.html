@@ -3,7 +3,7 @@
 	<head>
 		<meta charset="utf-8" />
 		<title>
-			Brainfjsk
+			MIRAC Brainfuck compiler
 		</title>
 		<style>
 			body{
@@ -70,17 +70,15 @@
 	<body>
 		<div id="controls">
 			<textarea autofocus id="codeInput">
-&gt;++++++++[-&lt;+++++++++&gt;]&lt;.&gt;&gt;+&gt;-[+]++&gt;++&gt;+++[&gt;[-&gt;+++&lt;&lt;+++&gt;]&lt;&lt;]&gt;-----.&gt;-&gt;
-+++..+++.&gt;-.&lt;&lt;+[&gt;[+&gt;+]&gt;&gt;]&lt;--------------.&gt;&gt;.+++.------.--------.&gt;+.&gt;+.
+++[----------&gt;+&lt;]&gt;.----.+++++++++.--[-&gt;++++&lt;]&gt;+.++.-[--&gt;+&lt;]&gt;.
 			</textarea><br />
 			<!--input type="text" id="programInput" placeholder="Input for program" /-->
 			<button id="runButton" onclick="run()">Compile</button>
-			<button id="resetButton">Reset</button>
 			<label for="boundaryChecks">Perform boundary checks: </label>
 			<input id="boundaryChecks" type="checkbox" />
 		</div>
 		<div id="console">
-			<textarea id="output"></textarea>
+			<textarea id="output" spellcheck="false"></textarea>
 		</div>
 	</body>
 </html>
@@ -135,6 +133,8 @@
 		m("$insStart:");
 		m("");
 		
+		code = code.replace(/[^+-.,\[\]<>]/g, "");
+		
 		code = code.split("");
 		
 		do{
@@ -152,39 +152,83 @@
 					b("SRNS $wrapToEnd");
 					m("");
 				break;
-				case "+":
-					m("// +");
-					m("WRAI $address");
-					m("LDAA");
-					m("INCA");
-					m("WRAM $address");
-					m("LDAM $address");
-					m("");
-				break;
 				case "-":
-					m("// -");
+				case "+":
+				case ",":
+				case ".":
+					
+					m("// block of ,.-+");
 					m("WRAI $address");
 					m("LDAA");
-					m("DECA");
+
+					var next = true;
+					
+					while(next){
+
+						var sum = 0;
+						
+						switch(code[insPointer]){
+							case "-":
+								sum = -1;
+							break;
+							case "+":
+								sum = 1;
+							break;
+							case ".":
+								m("PDWA");
+							break;
+						}
+						
+						while(code[insPointer + 1] == "+" || code[insPointer + 1] == "-"){
+							insPointer++;
+							if(code[insPointer] == "+"){
+								sum++;
+							} else if(code[insPointer] == "-"){
+								sum--;
+							}
+						}
+
+						if(sum != 0){
+
+							if(Math.abs(sum) > 4){ // An addition is smaller
+								m("OPRA");
+								if(sum > 0){
+									m("LDAI " + sum + ".");
+								} else {
+									m("LDAI " + (sum + 256 + "."));
+								}
+								m("ADDC");							
+							} else {	// A bunch of INCA or DECA is smaller
+								if(sum > 0){
+									while(sum--){
+										m("INCA");
+									}
+								} else {
+									while(sum++){
+										m("DECA");
+									}
+								}
+							}
+						}
+
+						if(
+							   code[insPointer + 1] == "+"
+							|| code[insPointer + 1] == "-"
+							|| code[insPointer + 1] == "."
+							|| code[insPointer + 1] == ","
+						){
+							insPointer++;
+						} else {
+							next = false;
+						}
+
+						
+					}
+					
 					m("WRAM $address");
 					m("LDAM $address");
 					m("");
-				break;
-				case ".":
-					m("// .");
-					m("PSHA");
-					m("LDAA");
-					m("PDWA");
-					m("PULA");
-					m("");
-				break;
-				case ",":
-					/*var character = input.charCodeAt(inputPointer);
-					if(!character){
-						character = 0;
-					}
-					tape[pointer] = character;
-					inputPointer++;*/			
+					
 				break;
 				case "[":
 					loopId++;
@@ -198,19 +242,6 @@
 					m("BRZS $closing_"+loopId);
 					m("$opening_"+loopId+":");
 					m("");
-					/*
-					if(tape[pointer] == 0){
-						var bracketLevel = 0;
-						do{
-							insPointer++;
-							if(code[insPointer] == "["){
-								bracketLevel++;
-							} else if(code[insPointer] == "]"){
-								bracketLevel--;
-							}
-						}while(bracketLevel >= 0);
-					}
-					*/
 				break;
 				case "]":
 
@@ -224,19 +255,6 @@
 					m("BRZZ $opening_"+closing);
 					m("$closing_"+closing+":");
 					m("");
-					/*
-					if(tape[pointer] != 0){
-						var bracketLevel = 0;
-						do{
-							insPointer--;
-							if(code[insPointer] == "]"){
-								bracketLevel++;
-							} else if(code[insPointer] == "["){
-								bracketLevel--;
-							}
-						}while(bracketLevel >= 0);
-					}
-					*/
 				break;
 			}
 			insPointer++;
