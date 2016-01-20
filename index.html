@@ -70,8 +70,13 @@
 	<body>
 		<div id="controls">
 			<textarea autofocus id="codeInput">
-++[----------&gt;+&lt;]&gt;.----.+++++++++.--[-&gt;++++&lt;]&gt;+.++.-[--&gt;+&lt;]&gt;.
-			</textarea><br />
+++
+  [----------&gt;+&lt;]
+&gt;.----.+++++++++.--
+  [-&gt;++++&lt;]
+&gt;+.++.-
+  [--&gt;+&lt;]
+&gt;.</textarea><br />
 			<!--input type="text" id="programInput" placeholder="Input for program" /-->
 			<button id="runButton" onclick="run()">Compile</button>
 			<label for="boundaryChecks">Perform boundary checks: </label>
@@ -111,6 +116,11 @@
 				midas += line + "\n";
 			}
 		}
+
+		m("// Compiled from the following brainfuck program:");
+		m("// ");
+		m("// "+code.replace(/[\n]/g, "\n// "));
+		m("");
 
 		m("LDAI $tapeStart");
 		m("PDAI 040");
