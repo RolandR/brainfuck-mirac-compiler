@@ -52,12 +52,18 @@
 				bottom: 20px;
 				padding: 10px;
 				background-color: #000000;
-				color: #00FF00;
-				font-family: monospace;
 			}
 			
 			#output{
 				white-space: pre;
+				width: 100%;
+				height: 100%;
+				box-sizing: border-box;
+				border: none;
+				background: none;
+				color: #00FF00;
+				font-family: monospace;
+				outline: none;
 			}
 		</style>
 	</head>
@@ -74,7 +80,7 @@
 			<input id="boundaryChecks" type="checkbox" />
 		</div>
 		<div id="console">
-			<span id="output"></span>
+			<textarea id="output"></textarea>
 		</div>
 	</body>
 </html>
