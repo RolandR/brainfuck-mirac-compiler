@@ -1,4 +1,3 @@
-# A brainfuck compiler for MIRAC
+# [A brainfuck compiler for MIRAC](http://draemm.li/various/mirac-brainfuck/)
 
-Demo: http://rolandrytz.ch/various/mirac-brainfuck/  
-Generates code for MIRAC: http://rolandrytz.ch/various/mirac/
+Generates code for MIRAC: http://draemm.li/various/mirac/
